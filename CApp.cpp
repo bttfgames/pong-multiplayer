@@ -13,7 +13,6 @@ CApp::CApp() {
     for (int i = 0; i <= TOTAL_PLAYERS; i++){
         players[i] = NULL;
     }
-    ballCollided = false;
 }
 
 
@@ -25,7 +24,7 @@ int CApp::OnExecute() {
     //comeco do jogo cria uma bola e 2 jogadores
     ball = new Ball(Surf_Ball,Surf_Display,400.0f);
     players[0] = new Player(Vector2D(Surf_P1->w ,Surf_Display->h/2 + 100), Surf_P1, Surf_Display);
-    players[1] = new Player(Vector2D(Surf_Display->w - Surf_P2->w - 100 ,Surf_Display->h/2), Surf_P2, Surf_Display);
+    players[1] = new Player(Vector2D(Surf_Display->w - Surf_P2->w ,Surf_Display->h/2), Surf_P2, Surf_Display);
 
     SDL_Event Event;
 
@@ -42,6 +41,18 @@ int CApp::OnExecute() {
 
     return 0;
 }
+
+
+
+void CApp::OnLoop() {
+    //atualiza posicao da bola e checa colisao
+    float elapsed = GetElapsed();
+    players[0]->Update(elapsed);
+    players[1]->Update(elapsed);
+    ball->Update(elapsed,ballCollided);
+    ballCollided = false;
+}
+
 
 void CApp::OnCollision(){
     if (players[0]->Collided(ball->pos, ball->radius)) {
@@ -121,22 +132,12 @@ bool CApp::OnInit() {
     return true;
 }
 
-void CApp::OnLoop() {
-    //atualiza posicao da bola e checa colisao
-    float elapsed = GetElapsed();
-    players[0]->Update(elapsed);
-    players[1]->Update(elapsed);
-    ball->Update(elapsed,ballCollided,Vector2D(1,1));
-}
-
 void CApp::OnRender() {
     //Field
     CSurface::OnDraw(Surf_Display, Surf_Field, 0, 0);
-
     ball->Draw();
     players[0]->Draw();
     players[1]->Draw();
-
     SDL_Flip(Surf_Display);
 }
 

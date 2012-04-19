@@ -10,10 +10,11 @@ Ball::Ball(SDL_Surface* ball, SDL_Surface* screen, float speed_ball){
 	 dir.rotate(toRadians(30));
 };
 
-void Ball::Update(float elapsed_time, bool collision_player, Vector2D dir_player){
+void Ball::Update(float elapsed_time, bool collision_player ){
+//, Vector2D dir_player){
 
 	if ((collision_player) && (!collided))	{
-		dir += dir_player;
+		//dir += change;
 		dir.normalize();
 		dir = Vector2D(-dir.x, dir.y);
 	}

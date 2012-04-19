@@ -30,5 +30,5 @@ bool Player::Collided(Vector2D ball_pos, float ball_radius){
 }
 
 void Player::Draw(){
-    CSurface::OnDraw(destination, source, pos.x - (width/2),pos.x - (width/2) );
+    CSurface::OnDraw(destination, source, pos.x - (width/2),pos.y - (width/2) );
 }
