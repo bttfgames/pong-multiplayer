@@ -22,14 +22,16 @@ void Ball::Update(float elapsed_time, bool collision_player ){
 	pos += (dir * speed * elapsed_time);
 	//pos += (dir * 0.01f);
 
-	if ((pos.x > destination->w + radius)||(pos.x < - radius))
-	{
+    //bordas
+	if ((pos.x > destination->w + radius)||(pos.x < - radius))	{
 		pos = Vector2D(destination->w / 2 ,destination->h / 2);
 		dir.rotate(toRadians(30 - rand()%60));
 	}
+
 	if (pos.y + radius > destination->h )
 		dir = Vector2D(dir.x, - abs(dir.y));
-	if (pos.y < radius)
+
+    if (pos.y < radius)
 		dir = Vector2D(dir.x, abs(dir.y));
 
 	collided = collision_player;

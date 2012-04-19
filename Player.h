@@ -17,7 +17,7 @@ class Player
  public:
 	 Player(Vector2D pos_ini, SDL_Surface* ball, SDL_Surface* screen);
 	 float width;
-	 float heigth;
+	 float height;
 	 Vector2D pos;
 	 Vector2D dir;
 	 float player_speed;
