@@ -1,4 +1,5 @@
 #include "CApp.h"
+//#include "UdpServer.h"
 #include <stdio.h>
 
 CApp::CApp() {
@@ -149,7 +150,4 @@ float CApp::GetElapsed(){
     return float(timeElapsed) / 1000.0f;
 }
 
-int main(int argc, char* argv[]) {
-    CApp theApp;
-    return theApp.OnExecute();
-}
+
