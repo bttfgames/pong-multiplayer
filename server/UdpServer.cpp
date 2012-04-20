@@ -20,12 +20,6 @@ SDL_Surface *screen,*back;
 bool finished = false;
 */
 
-static struct {
-    int active;
-    TCPsocket sock;
-    IPaddress peer;
-    Uint8 name[256+1];
-} players[GAME_MAXplayers];
 /*
 //************IMAGE STUFF****************
 SDL_Surface * ImageLoad(char *file)
@@ -47,12 +41,20 @@ SDL_BlitSurface(img, NULL, screen, &dest);
 //******************************************
  */
 
+UdpServer::UdpServer(SDL_Surface* src, SDL_Surface* dest){
+    source = src;
+    dest = dest;
 
-void UdpServer::FindInactivePersonSlot(int &which){
-    /* Look for inactive person slot */
-    for ( which=0; which<GAME_MAXplayers; ++which ) {
+
+}
+
+
+
+void UdpServer::FindInactivePersonSlot(){
+    int which = 0;
+    for ( which=0; which<GAME_MAXPEOPLE; ++which ) {
         if ( players[which].sock && ! players[which].active ) {
-            /* Kick them out.. */
+            /* Remove o jogador */
             unsigned char data = GAME_BYE;
             SDLNet_TCP_Send(players[which].sock, &data, 1);
             SDLNet_TCP_DelSocket(socketset, players[which].sock);
@@ -73,10 +75,10 @@ void UdpServer::RoomFull(TCPsocket newsock){
     fprintf(stderr, "Sala Cheia!\n");
 }
 
-void UdpServer::addInactiveSocket(int playerPos, TCPsocket newsock){
+void UdpServer::AddInactiveSocket(int playerPos, TCPsocket newsock){
     /* Add socket as an inactive person */
-    players[which].sock = newsock;
-    players[which].peer = *SDLNet_TCP_GetPeerAddress(newsock);
+    players[playerPos].sock = newsock;
+    players[playerPos].peer = *SDLNet_TCP_GetPeerAddress(newsock);
     SDLNet_TCP_AddSocket(socketset, players[playerPos].sock);
     fprintf(stderr, "New inactive socket %d\n", which);
 }
@@ -91,24 +93,24 @@ void UdpServer::HandleServer(void){
     }
 
     /* Look for unconnected person slot */
-    for ( i=0; i<GAME_MAXplayers; ++i ) {
+    for ( i=0; i<GAME_MAXPEOPLE; ++i ) {
         if ( !players[i].sock ) {
             break;
         }
     }
-    if ( i == GAME_MAXplayers ) {
-        findInactivePersonSlot(i);
+    if ( i == GAME_MAXPEOPLE ) {
+        FindInactivePersonSlot(i);
     }
-    if ( i == GAME_MAXplayers ) {
-        roomFull(newsock);
+    if ( i == GAME_MAXPEOPLE ) {
+        RoomFull(newsock);
     } else {
-        addInactiveSocket(i, newsock);
+        AddInactiveSocket(i, newsock);
     }
 }
 
 /* Send a "new client" notification */
-void UdpServer::SendNew(int about, int to)
-{
+void UdpServer::SendNew(int about, int to){
+
     char data[512];
     int n;
 
@@ -122,6 +124,7 @@ void UdpServer::SendNew(int about, int to)
     SDLNet_TCP_Send(players[to].sock, data, GAME_ADD_NAME+n);
 }
 
+
 void UdpServer::SendID(int which){
     char data[512];
     data[0] = GAME_ID;
@@ -129,17 +132,17 @@ void UdpServer::SendID(int which){
     SDLNet_TCP_Send(players[which].sock,data,GAME_ID_LEN+1);
 }
 
-void UdpServer::notifyAllConnectionClosed(char data[], int which){
+
+void UdpServer::NotifyAllConnectionClosed(char data[], int playerPos){
     /* Notify all active clients */
-#ifdef DEBUG
-    fprintf(stderr, "Closing socket %d (was%s active)\n",
-            which, players[which].active ? "" : " not");
-#endif
-    if ( players[which].active ) {
-        players[which].active = 0;
+    fprintf(stderr, "Closing socket %d (was %s active)\n",
+            playerPos, players[playerPos].active ? "" : " not");
+
+    if ( players[playerPos].active ) {
+        players[playerPos].active = 0;
         data[0] = GAME_DEL;
-        data[GAME_DEL_SLOT] = which;
-        for (int i=0; i<GAME_MAXplayers; ++i ) {
+        data[GAME_DEL_SLOT] = playerPos;
+        for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
             if ( players[i].active ) {
                 SDLNet_TCP_Send(players[i].sock,data,GAME_DEL_LEN);
             }
@@ -147,22 +150,21 @@ void UdpServer::notifyAllConnectionClosed(char data[], int which){
     }
 }
 
-void UdpServer::deleteConnection(int which){
-    SDLNet_TCP_DelSocket(socketset, players[which].sock);
-    SDLNet_TCP_Close(players[which].sock);
-    players[which].sock = NULL;
+void UdpServer::DeleteConnection(int playerPos){
+    SDLNet_TCP_DelSocket(socketset, players[playerPos].sock);
+    SDLNet_TCP_Close(players[playerPos].sock);
+    players[playerPos].sock = NULL;
 }
 
 
 
-void UdpServer::HandleClient(int which)
-{
+void UdpServer::HandleClient(int which){
     char data[512];
 
     /* Has the connection been closed? */
     if ( SDLNet_TCP_Recv(players[which].sock, data, 512) <= 0 ) {
-        notifyAllConnectionClosed(data, which);
-        deleteConnection(which);
+        NotifyAllConnectionClosed(data, which);
+        DeleteConnection(which);
 
     } else {
         switch (data[0]) {
@@ -178,7 +180,7 @@ void UdpServer::HandleClient(int which)
                          which, players[which].name);
 
                  /* Notify all active clients */
-                 for (int i=0; i<GAME_MAXplayers; ++i ) {
+                 for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
                      if ( players[i].active ) {
                          SendNew(which, i);
                      }
@@ -186,7 +188,7 @@ void UdpServer::HandleClient(int which)
 
                  /* Notify about all active clients */
                  players[which].active = 1;
-                 for (int i=0; i<GAME_MAXplayers; ++i ) {
+                 for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
                      if ( players[i].active ) {
                          SendNew(i, which);
                      }
@@ -202,13 +204,13 @@ void UdpServer::HandleClient(int which)
     }
 }
 
-void UdpServer::sendOutUDPs(char* msg, int channel){
+void UdpServer::SendOutUDPs(char* msg, int channel){
     UDPpacket *p;
 
     istringstream iss(msg, istringstream::in);
     string id;
     iss >> id;
-    for (int i=0; i<GAME_MAXplayers; ++i ) {
+    for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
         string c = ""+i;
         if ( players[i].active && c != id.c_str()) {
             //udp related stuff
@@ -240,7 +242,7 @@ void UdpServer::sendOutUDPs(char* msg, int channel){
     SDLNet_FreePacket(p);
 }
 
-void UdpServer::handleUDP(){
+void UdpServer::HandleUDP(){
     //Check is a udp packet has come in,
     //	if so, propogate it out to other players
     if (SDLNet_UDP_Recv(udpSocket, udpPacket)) {
@@ -256,11 +258,11 @@ void UdpServer::handleUDP(){
             printf("\tStatus:  %d\n", udpPacket->status);
             printf("\tAddress: %x %x\n",udpPacket->address.host, udpPacket->address.port);*/
 
-        sendOutUDPs((char *)udpPacket->data, udpPacket->channel);
+        SendOutUDPs((char *)udpPacket->data, udpPacket->channel);
     }
 }
 
-void UdpServer::checkIfFinished(){
+void UdpServer::CheckIfFinished(){
     // Check if we have some interesting events...
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -278,7 +280,7 @@ void UdpServer::checkIfFinished(){
     }
 }
 
-static void  UdpServer::cleanup(int exitcode){
+static void  UdpServer::Cleanup(int exitcode){
     if ( servsock != NULL ) {
         SDLNet_TCP_Close(servsock);
         servsock = NULL;
@@ -294,23 +296,7 @@ static void  UdpServer::cleanup(int exitcode){
     exit(exitcode);
 }
 
-void UdpServer::initSDL(){
-    /* Initialize SDL */
-    if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
-        fprintf(stderr, "Couldn't initialize SDL: %s\n",SDL_GetError());
-        exit(1);
-    }
-
-    /* Set a 640x480 video mode*/
-    screen = SDL_SetVideoMode(640, 480, 0, SDL_SWSURFACE);
-    if ( screen == NULL ) {
-        fprintf(stderr, "Couldn't set video mode: %s\n",SDL_GetError());
-        SDL_Quit();
-        exit(1);
-    }
-}
-
-void UdpServer::initSDLNet(){
+void UdpServer::InitSDLNet(){
     /* Initialize the network */
     if ( SDLNet_Init() < 0 ) {
         fprintf(stderr, "Couldn't initialize net: %s\n",
@@ -320,7 +306,7 @@ void UdpServer::initSDLNet(){
     }
 
     /* Open a socket */
-    if (!(udpSocket = SDLNet_UDP_Open(7777)))
+    if (!(udpSocket = SDLNet_UDP_Open(GAME_PORT)))
     {
         fprintf(stderr, "SDLNet_UDP_Open: %s\n", SDLNet_GetError());
         exit(EXIT_FAILURE);
@@ -334,17 +320,17 @@ void UdpServer::initSDLNet(){
     }
 }
 
-void UdpServer::initChannels(){
+void UdpServer::InitChannels(){
     /* Initialize the channels */
-    for (int i=0; i<GAME_MAXplayers; ++i ) {
+    for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
         players[i].active = 0;
         players[i].sock = NULL;
     }
 }
 
-void UdpServer::allocateSockets(){
+void UdpServer::AllocateSockets(){
     /* Allocate the socket set */
-    socketset = SDLNet_AllocSocketSet(GAME_MAXplayers+1);
+    socketset = SDLNet_AllocSocketSet(GAME_MAXPEOPLE+1);
     if ( socketset == NULL ) {
         fprintf(stderr, "Couldn't create socket set: %s\n",
                 SDLNet_GetError());
@@ -352,7 +338,7 @@ void UdpServer::allocateSockets(){
     }
 }
 
-void UdpServer::createServerSocket(){
+void UdpServer::SreateServerSocket(){
     IPaddress serverIP;
 
     /* Create the server socket */
@@ -362,13 +348,12 @@ void UdpServer::createServerSocket(){
     if ( servsock == NULL ) {
         fprintf(stderr, "Couldn't create server socket: %s\n",
                 SDLNet_GetError());
-        cleanup(2);
+        Cleanup(2);
     }
     SDLNet_TCP_AddSocket(socketset, servsock);
 }
 
 void UdpServer::initServer(){
-    initSDL();
     initSDLNet();
     initChannels();
     allocateSockets();
@@ -376,10 +361,9 @@ void UdpServer::initServer(){
 }
 
 // the network input loop
-int UdpServer::net_thread_main(void *data)
+int UdpServer::ServerLoop(void *data)
 {
     while(!finished){
-
         /* Wait for events */
         /*This function here is why we need a thread if we are doing keyboard
           input and drawing to the screen. This function waits until something
@@ -393,15 +377,21 @@ int UdpServer::net_thread_main(void *data)
         }
 
         /* Check for events on existing clients */
-        for (int i=0; i<GAME_MAXplayers; ++i ) {
+        for (int i=0; i<GAME_MAXPEOPLE; ++i ) {
             if ( SDLNet_SocketReady(players[i].sock) ) {
                 HandleClient(i);
             }
         }
+        Draw()
     }
     return(0);
+
 }
 
+
+void UdpServer::Draw(){
+    CSurface::OnDraw(destination, source, pos.x - (width/2),pos.y - (height/2) );
+}
 
 /*
    int main(int argc, char *argv[])

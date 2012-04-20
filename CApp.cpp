@@ -1,5 +1,4 @@
 #include "CApp.h"
-//#include "UdpServer.h"
 #include <stdio.h>
 
 CApp::CApp() {

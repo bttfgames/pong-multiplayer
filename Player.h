@@ -15,11 +15,12 @@ class Player{
         SDL_Surface* destination;
 
         //NET
+        /*
         int active;
         TCPsocket sock;
         IPaddress peer;
         Uint8 name[256+1];
-
+        */
     public:
         Player(Vector2D pos_ini, SDL_Surface* ball, SDL_Surface* screen);
         float width;

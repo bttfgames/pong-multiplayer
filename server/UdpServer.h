@@ -7,7 +7,7 @@
 #define GAME_PACKETSIZE	256		/* Maximum length of a message */
 
 /* Defines shared between the server and client */
-#define GAME_PORT	7777//MAKE_NUM('C','H','A','T')
+#define GAME_PORT	2000//MAKE_NUM('C','H','A','T')
 
 /* The protocol between the chat client and server */
 #define GAME_HELLO	0	/* 0+Port+len+name */
@@ -38,6 +38,9 @@
 
 class UdpServer{
     private:
+        SDL_Surface* source;
+        SDL_Surface* destination;
+
         SDL_Thread *netThread; //=NULL;
         static TCPsocket serverSocket; //= NULL;
         static SDLNet_SocketSet socketSet; //= NULL;
@@ -45,9 +48,16 @@ class UdpServer{
         UDPsocket *udpSocket;  //nao tinha ponteiro.     /* Socket descriptor */
         UDPpacket *udpPacket;       /* Pointer to packet memory */
 
+        static struct {
+            int active;
+            TCPsocket sock;
+            IPaddress peer;
+            Uint8 name[256+1];
+        } players[GAME_MAXPEOPLE];
+
 
     public:
-        UdpServer();
+        UdpServer(SDL_Surface* source, SDL_Surface* destination);
         ~UdpServer();
 
         static void Cleanup(int exitcode);
@@ -68,7 +78,8 @@ class UdpServer{
         void AllocateSockets();
         void CreateServerSocket();
         void InitServer();
-        int NetThreadMain(void *data);
+        void Draw();
+        int ServerLoop(void *data);
 
 }
 
