@@ -2,15 +2,17 @@
 #define _CAPP_H_
 
 #include "SDL/SDL.h"
+#include "SDL/SDL_net.h"
 #include "CSurface.h"
 #include "CEvent.h"
 #include "Player.h"
 #include "Ball.h"
 #include "MathUtil.h"
 #include "Vector2D.h"
-
+#include "UDPServer.h"
 
 #define TOTAL_PLAYERS 4
+
 
 class CApp: public CEvent {
     private:
@@ -27,6 +29,8 @@ class CApp: public CEvent {
 
         Ball* ball;
         Player* players[TOTAL_PLAYERS];
+
+		UDPServer server;
 
     public:
         CApp();

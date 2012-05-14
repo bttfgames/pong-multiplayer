@@ -9,6 +9,12 @@ A pong multiplayer game, using socket and SDL
 
 * SDL Library
 
+## Compilation
 
+	make
+
+## Execute
+
+	./pong
 
 

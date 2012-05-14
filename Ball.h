@@ -20,7 +20,6 @@ class Ball {
         float radius;
         bool collided;
         void Update(float elapsed_time, bool colision_player );
-        //, Vector2D dir_player);
         void SetPosition(Vector2D position);
         void Draw();
 };

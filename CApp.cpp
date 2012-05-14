@@ -13,6 +13,8 @@ CApp::CApp() {
     for (int i = 0; i <= TOTAL_PLAYERS; i++){
         players[i] = NULL;
     }
+
+	server = UDPServer();
 }
 
 
@@ -47,10 +49,18 @@ int CApp::OnExecute() {
 void CApp::OnLoop() {
     //atualiza posicao da bola e checa colisao
     float elapsed = GetElapsed();
-    players[0]->Update(elapsed);
-    players[1]->Update(elapsed);
-    ball->Update(elapsed,ballCollided);
+    //players[0]->Update(elapsed);
+    //players[1]->Update(elapsed);
+    //ball->Update(elapsed,ballCollided);
     ballCollided = false;
+
+	server.ReceivePackage();
+
+	ball->SetPosition(server.serverPacket.ballPos);
+	players[0]->SetPosition(server.serverPacket.player1);
+	players[1]->SetPosition(server.serverPacket.player2);
+
+
 }
 
 
@@ -105,6 +115,11 @@ bool CApp::OnInit() {
         printf( "Não iniciado!");
         return false;
     }
+
+	//Udp Server nao iniciado
+	if (!server.isUp()){
+		return false;
+	}
 
     if((Surf_Display = SDL_SetVideoMode(640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) {
         printf( "Display error!");
